@@ -27,12 +27,12 @@ First we need to import POLR2A Chip-seq files -- a simple .bed file of peaks.
 
 # setting file path to peak files
 
-basepath <- "/scratch/Shares/rinnclass/CLASS_2023/<your_folder>"
-path <- "CLASS_2023/CLASSES/03_Nextflow/00_Pol2_NF_CORE_RUN/results/bwa/mergedLibrary/macs/broadPeak"
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023/"
+path <- "2023_2_10_group3/group/results/bwa/mergedLibrary/macs/broadPeak"
 
 # first we read the peak files in as gRanges object with rtracklayer function.
-peaks1 <- rtracklayer::import(file.path(basepath,path, "POLR2A_R1_peaks.broadPeak"))
-peaks2 <- rtracklayer::import(file.path(basepath,path, "POLR2A_R2_peaks.broadPeak"))
+peaks1 <- rtracklayer::import(file.path(basepath,path, "CEBPZ_R1_peaks.broadPeak"))
+peaks2 <- rtracklayer::import(file.path(basepath,path, "CEBPZ_R2_peaks.broadPeak"))
 
 # Load Gencode-v32: for genome features.
 gencode_gr <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/data/data/genomes/gencode.v32.annotation.gtf")
@@ -69,13 +69,15 @@ Now we have promoter ranges and peak ranges let's use findOverlaps function
 promoter_overlaps_pol2_peaks1 <- findOverlaps(peaks1, gencode_promoters)
 # Let's look
 promoter_overlaps_pol2_peaks1
+length(peaks1) # check the size of the peaks- smaller than the data- couple classes ago why 
 
-# nice we see that 19,063 promoters overlap with Pol2 replicate 1.
+# nice we see that 19,063 promoters overlap with Pol2 replicate 1.- for my data its 339 overlaps bc peak can b large and overlap multiple peaks- big peak can lead to multiple overlaps
 # Let's try the same for replicate 2:
 
 promoter_overlaps_pol2_peaks2 <- findOverlaps(peaks2, gencode_promoters)
 # Let's look
 promoter_overlaps_pol2_peaks2
+length(peaks2)
 
 # 19,700 promoters overlap -- so similar to rep 1.
 ```
@@ -104,6 +106,8 @@ NOTE: each peak is going to have numerous overlaps so we want only the unique on
 # Thus we can index there and only retrieve the peaks that had overlaps
 # Since we did peaks1, gencode promoters peaks1 is @ from and promoters @ to
 
+
+#109-120 DO FOR PROJECT EACH PROTEIN, EACH REPLICATE 
 # indexing
 peak1_ov_gr <- peaks1[unique(promoter_overlaps_pol2_peaks1@from)] 
 

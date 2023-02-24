@@ -70,6 +70,9 @@ Let's make a list of ranges and see what this looks like.
 
 ir1 <- IRanges(start = c(1,200, 1000), end = c(30, 299, 1200))
 
+# were making 3 peaks and one chromosome- peak one starts at 1 goes till 30, peak 2 starts at 200 goes till 299, to practice we are doing this on a smaller scale for now 
+
+
 # take a look
 ir1
 

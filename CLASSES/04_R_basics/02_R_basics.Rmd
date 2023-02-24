@@ -7,12 +7,20 @@ editor_options:
   chunk_output_type: console
 ---
 
+if (!requireNamespace("BiocManager", quietly = TRUE))
+install.packages("IRanges")
+
+install.packages("deseq2")
+
+BiocManager::install("IRanges")
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = F)
 library(tidyverse)
 library(GenomicRanges)
 ```
+
 
 Today we are going to do some basic R commands and look at our Pol2 ChIP data.
 This lesson can be applied to most data frames (similar to excel sheets). 
@@ -34,7 +42,7 @@ Since that is a lot of path typing each time let's shorten it my using file.path
 
 # we will first need to set an object name to load into the environment (what we are calling this file.path)
 # we assign it the values in the file using the assignment opperator " <- " 
-basepath <- "/scratch/Shares/rinnclass/CLASS_2023/<your_folder>"
+basepath = "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman
 
 # we can then add the rest of the path as such:
 Pol2_peak1 <- read_tsv(file.path(basepath, " rest of file path"))
@@ -43,7 +51,12 @@ Pol2_peak1 <- read_tsv(file.path(basepath, " rest of file path"))
 # now we can read in the peak file using file.path() function , rest of path
 # we will use the "read_tsv" baseR function and assign it ( <- ) to Pol2_peak1
 
+ignore this 
 Pol2_peak1 <- read_tsv(file.path(basepath, "CLASS_2023/CLASSES/03_Nextflow/00_Pol2_NF_CORE_RUN/results/bwa/mergedLibrary/macs/broadPeak/POLR2A_R1_peaks.broadPeak"))
+
+ignore this
+Pol2_peak1 <- read.table(file.path(basepath, "CLASS_2023/CLASSES/03_Nextflow/00_Pol2_NF_CORE_RUN/results/bwa/mergedLibrary/macs/broadPeak/POLR2A_R1_peaks.broadPeak"))
+
 
 # cool, let's take a look at what we got by clicking the object in the env window.
 ```
@@ -234,8 +247,8 @@ Now let's see how pval correlates with peak size using ggplot
 # ggplot wasnts to the axis values (peak_width and qValue)
 # then it needs to know what kind of plot (we will do much more on this later)
 
-# first pipe in the dataframe to GGplot
-Pol2_peak1 %>%
+# first pipe in the dataframe to GGplot- so it can remember your data column names, need to include the %>% part w code to run 
+Pol2_peak1 %>% 
   # set the aes(x= , y= ) 
 ggplot(aes(x = peak_width, y = qValue)) +
   # + tells ggplot to add another aspect to plot (points)

@@ -90,7 +90,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 options(stringsAsFactors = F)
 # This is an important thing to have. When you read in a table R default is to
-# make the columns have a "factor" associated with them. This is like a "meta variable"
+
+# them. This is like a "meta variable"
 # The col still has a name but that name is now an associated factor above the name.
 # When we run RNAseq pipelines the comparison samples are "factorized" so the program
 # knows which cols represent which samples for differential expression etc.

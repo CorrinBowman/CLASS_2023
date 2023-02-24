@@ -70,7 +70,7 @@ table(seqnames(gencode_gr)) %>%
   summary()
 # this tells us how many features there are in the genome.
 
-# Let's find out how many features the mitochondrial chr has (25th level)
+# Let's find out how many features the mitochondrial chr has (25th level) indexing
 table(seqnames(gencode_gr))[25] 
 
 # we see this is the mitochondrial chromosome and has 143 elements
@@ -123,7 +123,7 @@ gencode_gr_length <- data.frame("gene_id" = gencode_gr@elementMetadata$gene_id,
                            "chr" = gencode_gr@seqnames)
                            
 ```
-
+#data.frame is like a blank excel sheet we can fill in- column name first 
 Ok so now we have a new data frame with the information we want from gencode_gr
 Note we see that we can index the RANGES for each gene with @ranges "level"
 
@@ -201,7 +201,7 @@ weird_exons <- width_1_items %>%
 
 huh 33 exons are 1 nt -- annotations are never perfect :)
 The one thing that should be 1nt long is a TSS.
-To get the TSS we need to use the promters function:
+To get the TSS we need to use the promoters function:
 
 # defining gene TSS 
 ```{R annotation widths of 1 ?}

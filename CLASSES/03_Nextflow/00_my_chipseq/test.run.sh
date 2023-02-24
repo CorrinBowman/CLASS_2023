@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH -p long
-#SBATCH --job-name=YFTF_Chipseq
+#SBATCH -p short
+#SBATCH --job-name=PolII_test
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=corrin.bowman@colorado.edu
+#SBATCH --mail-user=corrin.bowman@colorado.edu 
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --mem=6gb
-#SBATCH --time=11:00:00
+#SBATCH --time=14:00:00
 #SBATCH --output=nextflow.out
-#SBATCH --error=nextflow.erry
+#SBATCH --error=nextflow.err
 pwd; hostname; date
 echo "Lets go"
 module load singularity/3.1.1
