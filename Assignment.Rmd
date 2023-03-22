@@ -169,7 +169,7 @@ dim(num_peaks_df[is.na(num_peaks_df$tf),])
 # compare how your consensus peaks are similar or different to previous analyses
 
 
-
+#I uploaded EP300 and compared this to the EP300 from spring of 2021. I believe what I was looking at was had mostly similar peaks with minor differences. 
 
 ```
 
