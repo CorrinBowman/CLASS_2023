@@ -1,0 +1,77 @@
+---
+title: "Corrin_class_exercise"
+author: Corrin Bowman
+date: 3/20/2023
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023"
+peak_path <- "2023_2_10_group3/group/results/bwa/mergedLibrary/macs/broadPeak/"
+broadpeakfilepath <- file.path(basepath, peak_path)
+
+
+library(GenomicRanges)
+library(tidyverse)
+library(IRanges)
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/BCHM5631_my_class_functions.R")
+
+
+```
+
+
+# load in your peak files for each replicate of each protein
+# Here I am starting to analyze my data for my proteins of interest:
+# proteinX, Y, Z .....
+# First I will read in each replicate file
+```{r load in peak files}
+
+# filepath to import peaks
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023"
+peak_path <- "2023_2_10_group3/group/results/bwa/mergedLibrary/macs/broadPeak/"
+broadpeakfilepath <- file.path(basepath, peak_path)
+
+# import peaks
+peak_list <- import_peaks(consensus_file_path = broadpeakfilepath)
+
+# let's get a list of how many peaks are in each file before we create consensus peaks.
+peak_num <- sapply(peak_list, length) %>% as.data.frame(row.names = T)
+# label column
+names(peak_num) <- c("num_peaks")
+
+
+# printing out a table of the number of peaks in each file:
+peak_num <- peak_num %>%
+  rownames_to_column(var = "dbp") %>%
+  separate(col = dbp,  into = c('dbp', 'replicate'), sep = "_")
+
+```
+
+
+# Now I am going to create consensus peaks for each protein
+```{r consensus peaks}
+
+dbps <- unique(sapply(names(peak_list), function(x) {
+   unlist(strsplit(x, "_"))[1]
+}))
+
+consensus_list <- lapply(dbps, consensus_from_reduced, peak_list)
+names(consensus_list) <- dbps
+
+num_consensus_peaks <- sapply(consensus_list, length) %>% 
+  as.data.frame() %>%
+  rownames_to_column( var = "dbp") %>%
+  dplyr::rename(number_consensus_peaks = ".")
+
+peak_num <- left_join(peak_num, num_consensus_peaks)
+
+# export consensus peaks to results folder
+
+#write_csv(peak_num, "results/num_peaks_df.csv")

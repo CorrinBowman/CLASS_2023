@@ -10,6 +10,10 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023"
+peak_path <- "2023_2_10_group3/group/results/bwa/mergedLibrary/macs/broadPeak/"
+broadpeakfilepath <- file.path(basepath, peak_path)
+
 
 library(GenomicRanges)
 library(tidyverse)
@@ -67,7 +71,7 @@ peak_num <- left_join(peak_num, num_consensus_peaks)
 
 # export consensus peaks to results folder
 
-write_csv(peak_num, "results/num_peaks_df.csv")
+#write_csv(peak_num, "results/num_peaks_df.csv")
 
 ```
 
@@ -75,22 +79,31 @@ write_csv(peak_num, "results/num_peaks_df.csv")
 ```{r}
 
 basepath <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman"
-consensus_path <- "CLASS_2023/consensus peaks"
+consensus_path <- "CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/consensus_peaks/"
 exportpath <- file.path(basepath, consensus_path)
 
+# now we can export each as .bed file
 for(i in 1:length(consensus_list)) {
 rtracklayer::export(consensus_list[[i]], paste0(exportpath, names(consensus_list)[i], "_consensus_peaks.bed") )}
 
-consensus_file_list <- list.files("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks", full.names = T, pattern = ".bed")
+
+
+
+consensus_file_list <- list.files("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/consensus_peaks/", full.names = T, pattern = ".bed")
 
 peaks <- lapply(consensus_file_list, read.table, col.names = c("chr", "start", "end", "name", "score", "strand"))
 
 names(peaks) <- dbps
 
+# make chromosomes of interest object
 canonical_chr <- c(paste0("chr", 1:22), "chrM", "chrX", "chrY")
+
+# let's use lapply with filter funciton to cannonical_chr
 peaks <- lapply(peaks, function(x) x %>% filter(chr %in% canonical_chr))
 
-new_filenames <- paste0("consensus peaks/", names(peaks), "_consensus.bed")
+
+# now that these are all nice and clean let's export:
+new_filenames <- paste0("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/consensus_peaks/", names(peaks), "_consensus.bed")
 
 for(i in 1:length(peaks)) {
   write.table(peaks[[i]], new_filenames[[i]],
@@ -98,14 +111,17 @@ for(i in 1:length(peaks)) {
               quote = FALSE, append = TRUE)
 }
 
-headers <- paste0("track type=bedGraph name=", names(peaks))
+# we are using paste0 to print the header text
+# then we are adding the names as the value the header equals with 'names' function
+headers <- paste0("track type=bed name=", names(peaks))
 headers
 
-
 # print out consensus peak files in a results/UCSC directory
-
-new_filenames <- paste0("ucsc_consensus_peaks/", names(peaks), ".bed")
+# creating a path to export after we add header in for loop below
+new_filenames <- paste0("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/ucsc_consensus_peaks/", names(peaks), ".bed")
 new_filenames
+
+# let's do so more indexing and only print out the first two of the three files.
 
 for(i in 1:length(peaks)) {
   # Write the header line
@@ -117,48 +133,14 @@ for(i in 1:length(peaks)) {
               quote = FALSE, append = TRUE)
 }
 
-```
 
 
-# I am curious if my proteins are transcription factors so I will use the annotations
-# in a cell paper I found and see
 
-```{r}
-url <- "https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx"
-
-destination_for_url <- "results/TF_annotations.xlsx" 
-
-# to download we can use download.file
-download.file(url, destination_for_url)
+# print out consensus peak files in a results/UCSC directory
 
 
-human_tfs <- readxl::read_excel("results/TF_annotations.xlsx",
-                                sheet = 2, skip = 1)
-
-
-# let's rename the 4th column to indicate if it is a TF.
-names(human_tfs)[4] <- "is_tf"
-num_peaks_df <- data.frame("dbp" = names(consensus_peaks),
-                           "num_peaks" = sapply(consensus_peaks, length))
-
-length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
-
-human_tfs <- human_tfs[tolower(human_tfs$Name) %in% tolower(num_peaks_df$dbp), 1:4]
-
-
-# adding new column names
-names(human_tfs) <- c("ensembl_id",
-                      "dbp",
-                      "dbd",
-                      "tf")
-num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T) 
-
-# Let's check how many NAs -- we should have some missing values  
-dim(num_peaks_df[is.na(num_peaks_df$tf),])
 
 ```
-
-
 
 
 # Now I want to compare a protein with a previous analysis 
@@ -184,7 +166,7 @@ library(GenomicRanges)
 source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/BCHM5631_my_class_functions.R")
 
 basepath <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman"
-peak_path <- "CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks"
+peak_path <- "CLASS_2023/CLASSES/05_R_analyses//Class_exercise/Results/consensus_peaks"
 consensusPeakPath <- file.path(basepath, peak_path)
 
 
@@ -194,32 +176,31 @@ consensusPeakPath <- file.path(basepath, peak_path)
 
 consensus_peaks <- lapply(consensus_peaks_files, rtracklayer::import)
 
-names(consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks/|_consensus.bed","", consensus_peaks_files)
+names(consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/consensus_peaks/|_consensus.bed","", consensus_peaks_files)
 
 gencode_gr <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/data/data/genomes/gencode.v32.annotation.gtf")
 
 gencode_genes <- gencode_gr[gencode_gr$type == "gene"] 
 table(gencode_gr$type)
 
-rtracklayer::export(gencode_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/gene_annotations/gencode_genes.gtf")
+rtracklayer::export(gencode_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/gencode_genes.gtf")
 
 
 mrna_genes <- gencode_genes[gencode_genes$gene_type %in% "protein_coding"] 
 
-rtracklayer::export(mrna_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/gene_annotations/mrna_genes.gtf")
+rtracklayer::export(mrna_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/mrna_genes.gtf")
 table(gencode_genes$gene_type)
 
 lncrna_genes <- gencode_genes[gencode_genes$gene_type %in% "lncRNA"] 
 
-rtracklayer::export(lncrna_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/gene_annotations/lncrna_genes.gtf")
+rtracklayer::export(lncrna_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/lncrna_genes.gtf")
 
 
 mrna_lncrna_genes <- gencode_genes[gencode_genes$gene_type %in% c("protein_coding","lncRNA")]
-rtracklayer::export(mrna_lncrna_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/gene_annotations/mrna_lncrna_genes.gtf")
+rtracklayer::export(mrna_lncrna_genes, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/mrna_lncrna_genes.gtf")
 
 
-
-lncrna_mrna_genes <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/gene_annotations/mrna_lncrna_genes.gtf")
+lncrna_mrna_genes <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/mrna_lncrna_genes.gtf")
 
 # Nice that loaded so much faster -- lets see as DF
 lncrna_mrna_genes_df <- lncrna_mrna_genes %>% as.data.frame()
@@ -228,7 +209,7 @@ lncrna_mrna_genes_df <- lncrna_mrna_genes %>% as.data.frame()
 lncrna_mrna_promoters <- promoters(lncrna_mrna_genes, upstream = 1000, downstream = 1000)
 # check right size
 width(lncrna_mrna_promoters) # 2000 
-rtracklayer::export(lncrna_mrna_promoters, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/gene_annotations/lncrna_mrna_promoters.gtf")
+rtracklayer::export(lncrna_mrna_promoters, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/lncrna_mrna_promoters.gtf")
 
 
 # last handy annotation will be lncRNA and mRNA gene IDs to subset
@@ -278,7 +259,7 @@ num_peaks_df$peaks_overlapping_lncrna_promoters <- rowSums(promoter_peak_counts[
 # mrna promoter overlaps
 num_peaks_df$peaks_overlapping_mrna_promoters <- rowSums(promoter_peak_counts[,mrna_gene_ids])
 
-write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/num_peaks_df.csv")
+write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/num_peaks_df.csv")
 
 
 
@@ -340,7 +321,8 @@ promoter_peak_occurence <- count_peaks_per_feature(lncrna_mrna_promoters, consen
                                                type = "occurrence")
 stopifnot(all(colnames(promoter_peak_occurence) == lncrna_mrna_promoters$gene_id))
 
-write.table(promoter_peak_occurence, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+write.table(promoter_peak_occurence, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+
 
 ```
 
@@ -360,13 +342,58 @@ peak_occurence_df <- data.frame("gene_id" = colnames(promoter_peak_occurence),
 
 # "counts" just gave us value for the dbp of interest
 
-write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/peak_occurence_dataframe.csv")
+write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/peak_occurence_dataframe.csv")
 
 
 ```
 ## results: I find the max number of proteins on a promoter to be X
 
 10
+
+
+
+# I am curious if my proteins are transcription factors so I will use the annotations
+# in a cell paper I found and see
+
+```{r}
+url <- "https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx"
+
+destination_for_url <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/TF_annotations/TF_annotations.xlsx" 
+
+# to download we can use download.file
+download.file(url, destination_for_url)
+
+
+human_tfs <- readxl::read_excel("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/TF_annotations/TF_annotations.xlsx" 
+,
+                                sheet = 2, skip = 1)
+
+
+# let's rename the 4th column to indicate if it is a TF.
+names(human_tfs)[4] <- "is_tf"
+num_peaks_df <- data.frame("dbp" = names(consensus_peaks),
+                           "num_peaks" = sapply(consensus_peaks, length))
+
+length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
+
+human_tfs <- human_tfs[tolower(human_tfs$Name) %in% tolower(num_peaks_df$dbp), 1:4]
+
+
+# adding new column names
+names(human_tfs) <- c("ensembl_id",
+                      "dbp",
+                      "dbd",
+                      "tf")
+num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T) 
+
+# Let's check how many NAs -- we should have some missing values  
+dim(num_peaks_df[is.na(num_peaks_df$tf),])
+
+
+
+
+```
+
 
 # Now I want to start plotting my results
 # First I will see if there is a realtionship between peak number and total DNA covered
@@ -375,10 +402,11 @@ write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/
 library(ggplot2)
 library(tidyverse)
 
-source("../../../util/plotting_functions.R")
-source("../../../util/_setup.R")
 
-num_peaks_df <- read_csv('/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results/num_peaks_df.csv')
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/plotting_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/_setup.R")
+
+num_peaks_df <- read_csv('/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/num_peaks_df.csv')
 
 
 ggplot(num_peaks_df, aes(x = num_peaks, 
@@ -390,16 +418,14 @@ ggplot(num_peaks_df, aes(x = num_peaks,
 # Now I want to color my plot by wether the protein is a TF or not.
 ```{r}
 
-
-ggplot(num_peaks_df, aes(x = num_peaks, 
-                 y = total_peak_length,
-                   color= tf )
-                ) +
-  geom_point() 
-
+  
+ # ggplot(num_peaks_df, aes(x = num_peaks, 
+                # y = total_peak_length,
+                 #color = tf == "Yes")) +
+ # geom_point()
 
 
-ggplot
+
 ```
 
 # I want to make a histogram of the number of peaks for each of my proteins
@@ -416,11 +442,12 @@ hist
 # Now I want to facet this by the type of DNA binding domain my protein has.
 ```{r}
 
-ggplot(num_peaks_df, aes(x = num_peaks, 
-                 y = total_peak_length
-                )) +
-  facet_wrap(dbd ~ .) +
-  geom_point() 
+#ggplot(num_peaks_df, aes(x = num_peaks, 
+                # y = total_peak_length
+              #  )) +
+ # facet_wrap(dbd ~ .) +
+ # geom_point() 
+
 
 
 ```
