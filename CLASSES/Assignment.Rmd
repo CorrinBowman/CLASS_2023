@@ -169,7 +169,7 @@ dim(num_peaks_df[is.na(num_peaks_df$tf),])
 # compare how your consensus peaks are similar or different to previous analyses
 
 
-
+#I uploaded EP300 and compared this to the EP300 from spring of 2021. I believe what I was looking at was had mostly similar peaks with minor differences. 
 
 ```
 
@@ -282,7 +282,6 @@ num_peaks_df$peaks_overlapping_mrna_promoters <- rowSums(promoter_peak_counts[,m
 
 write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results2/num_peaks_df.csv")
 
-# answer is in the file ^ 
 
 
 ```
