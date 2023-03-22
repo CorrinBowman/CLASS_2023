@@ -1,0 +1,142 @@
+---
+title: "protein chd2"
+output: html_document
+---
+
+``{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = F)
+library(GenomicRanges)
+library(tidyverse)
+# library(Gviz)
+library(IRanges)
+```
+
+```{r}
+#Locate the base file path for our group folder
+
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023/2023_2_10_group3/group/results/bwa/mergedLibrary/macs/broadPeak"
+
+
+#make objects for our broadPeak files (group by replicate)
+
+
+#CHD2
+CHD2_peaks1 <- rtracklayer::import(file.path(basepath, "CHD2_R1_peaks.broadPeak"))
+CHD2_peaks2 <- rtracklayer::import(file.path(basepath, "CHD2_R2_peaks.broadPeak"))
+
+
+
+
+```{r}
+# Load Gencode-v32: for genome features.
+gencode_gr <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/data/data/genomes/gencode.v32.annotation.gtf")
+
+```
+
+```{r}
+#Define Promoters
+gencode_promoters <- promoters(gencode_gr[gencode_gr$type == "gene"], 
+                               upstream = 1e3, 
+                               downstream = 1e3)
+
+
+length(gencode_promoters)
+
+```
+
+##Generic template - copy lines 70 thru 119 for your assigned replicate
+# Using subseByOverlaps instead of findOverlaps
+
+```{r SubsetByOverlaps }
+####TODO
+#Will need to repeat this section for each gene and each replicate
+####
+
+# subset overlaps from peaks1 and promoters
+promoter_overlaps_CHD2_peaks1 <- subsetByOverlaps(CHD2_peaks1, gencode_promoters)
+
+promoter_overlaps_CHD2_peaks1
+
+# subset overlaps from peaks2 and promoters
+promoter_overlaps_CHD2_peaks2 <- subsetByOverlaps(CHD2_peaks2, gencode_promoters)
+
+promoter_overlaps_CHD2_peaks2
+
+# now overlapping the two overlaps by findOverlaps
+subset_overlaps_peaks <- findOverlaps(promoter_overlaps_CHD2_peaks1, promoter_overlaps_CHD2_peaks2)
+subset_overlaps_peaks
+```
+
+
+# How many unique peaks resulted in these overlaps? 
+```{r how many unique peaks had overlaps}
+
+length(unique(subset_overlaps_peaks@to))
+length(unique(subset_overlaps_peaks@to))
+
+table(table(subset_overlaps_peaks@from))
+
+table(table(subset_overlaps_peaks@to))
+```
+
+
+# Percentage of consensus peaks that overlap promoters?
+
+```{r peak overlaps and promoter overlaps}
+
+CHD2_consensus_peaks <- subsetByOverlaps(CHD2_peaks1, CHD2_peaks2)
+CHD2_consensus_peaks
+
+CHD2_peaks1 # total peaks in replicate 1
+
+CHD2_peaks2 # total peaks in replicate 2
+
+CHD2_consensus_peaks_ov_promoters <- subsetByOverlaps(CHD2_consensus_peaks, gencode_promoters)
+
+CHD2_consensus_peaks_ov_promoters
+
+df <- data.frame(
+  peak= rep(c(1,2,1,2)),
+  
+  PromoterOverlap = c(rep("Yes",2), rep("No",2)),
+  
+  num_peaks=c(length(promoter_overlaps_CHD2_peaks1),  
+              length(promoter_overlaps_CHD2_peaks2), 
+              length(CHD2_peaks1)-length(promoter_overlaps_CHD2_peaks1), 
+              length(CHD2_peaks2)- length(promoter_overlaps_CHD2_peaks2)))
+
+df$peak <- as.factor(df$peak)
+
+ggplot(data=df, aes(x=peak, y=num_peaks, fill= PromoterOverlap)) +
+  geom_bar(stat="identity", position="stack")+  labs(x="Replicate",
+       y="Number of Peaks",
+       title= "CDH2: Percentage of Peaks with Promoter Overlaps")
+
+```
+
+
+
+
+
+```{r}
+df <- data.frame(
+  peak= rep(c(1:2)), 
+  
+  PromoterOverlap = c(rep("Yes", 6), rep("No",6)),
+  
+  num_peaks=c(length(promoter_overlaps_CHD2_peaks1),    
+              length(promoter_overlaps_CHD2_peaks2), 
+              length(CHD2_peaks1)-length(promoter_overlaps_CHD2_peaks1), 
+              length(CHD2_peaks2)- length(promoter_overlaps_CHD2_peaks2)
+
+df$peak <- as.factor(df$peak)
+
+ggplot(data=df, aes(x=peak, y=num_peaks, fill= PromoterOverlap)) +
+  geom_bar(stat="identity", position="stack")+  labs(x="Replicate",
+       y="Number of Peaks",
+       title= "EP300: Percentage of Peaks with Promoter Overlaps")
+
+
+
+

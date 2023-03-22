@@ -13,11 +13,11 @@ options(stringsAsFactors = F)
 library(GenomicRanges)
 library(tidyverse)
 library(IRanges)
-source("../../../util/my_class_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/BCHM5631_my_class_functions.R")
 
 # filepath to import peaks
-basepath <- "/scratch/Shares/rinnclass/CLASS_2023/<your_folder>"
-peak_path <- "CLASS_2023/CLASSES/03_Nextflow/00_my_chipseq/results/bwa/mergedLibrary/macs/broadPeak/"
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023"
+peak_path <- "2023_2_10_group3/group/results/bwa/mergedLibrary/macs/broadPeak/"
 broadpeakfilepath <- file.path(basepath, peak_path)
 ```
 Acompanying youtube video:
@@ -47,12 +47,14 @@ names(peak_num) <- c("num_peaks")
 
 # make dbp name a col.
 
+#adding in new column to make replicate in a column 
 peak_num <- peak_num %>%
   rownames_to_column(var = "dbp") %>%
   separate(col = dbp,  into = c('dbp', 'replicate'), sep = "_")
   # peak_num <- separate(peak_num, col = dbp,  into = c('dbp', 'replicate'), sep = "_")
+#breaks at underscore and take the side for the rplicate number and add as a column 
 
-# let's save this for our records 
+# let's save this for our records- going to export our data, tell it where to save as second input 
 write_csv(peak_num, "results/num_peaks_df.csv")
 
 # cool our first results file !
@@ -98,19 +100,19 @@ Let's use "analysis/00_consensus_peaks/
 
 ```{r exporting consensus peaks }
 # setting file path to export
-basepath <- "/scratch/Shares/rinnclass/CLASS_2023/<your_folder>"
-consensus_path <- "CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/"
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman"
+consensus_path <- "CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks/"
 exportpath <- file.path(basepath, consensus_path)
 
 # /scratch/Shares/rinnclass/CLASS_2023/JR/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/consensus_peaks
 
-# now we can export each as .bed file
+# now we can export each as .bed file= start and stop 
 for(i in 1:length(consensus_list)) {
 rtracklayer::export(consensus_list[[i]], paste0(exportpath, names(consensus_list)[i], "_consensus_peaks.bed") )}
 
 # alternative local export:
 for(i in 1:length(consensus_list)) {
-rtracklayer::export(consensus_list[[i]], paste0("results/consensus_peaks/", names(consensus_list)[i],"_consensus_peaks.bed")) }
+rtracklayer::export(consensus_list[[i]], paste0("results/Consensus Peaks/", names(consensus_list)[i],"_consensus_peaks.bed")) }
 
 ```
 
@@ -131,7 +133,7 @@ peak_1 <- read_tsv("EP300_consensus_peaks.bed", col_names = F)
 Rtracklayer export does not keep the col names :( 
 ```{r reading .bed file from rtracklayer_export}
 # FIRST a file list:
-consensus_file_list <- list.files("/scratch/Shares/rinnclass/CLASS_2023/JR/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks", full.names = T, pattern = ".bed")
+consensus_file_list <- list.files("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks", full.names = T, pattern = ".bed")
 
 # lapply (for loop) across consensus file list to add colnames
 # The actual col names for .broadPeak are: chr, start, end, name, score, strand
@@ -144,15 +146,15 @@ names(peaks) <- dbps
 # STEP4_3 remove contigs from peak files 
 ```{r filtering out contigs}
 
-# make chromosomes of interest object
+# make chromosomes of interest object, getting rid of weird chromosomes
 canonical_chr <- c(paste0("chr", 1:22), "chrM", "chrX", "chrY")
 
-# let's use lapply with filter funciton to cannonical_chr
+# let's use lapply with filter function to cannonical_chr
 peaks <- lapply(peaks, function(x) x %>% filter(chr %in% canonical_chr))
 
 
-# now that these are all nice and clean let's export:
-new_filenames <- paste0("consensus_peaks/", names(peaks), "_consensus.bed")
+# now that these are all nice and clean let's export: pasting a string together to name files
+new_filenames <- paste0("Consensus Peaks/", names(peaks), "_consensus.bed")
 
 for(i in 1:length(peaks)) {
   write.table(peaks[[i]], new_filenames[[i]],
@@ -181,8 +183,10 @@ The header we need is : track type=broadPeak name="
 
 headers <- paste0("track type=bedGraph name=", names(peaks))
 headers
+#header used for ucsc to know what its looking at so knows how to load it
 
 # creating a path to export after we add header in for loop below
+#need to make folder with uscs_consensus_peaks name
 new_filenames <- paste0("ucsc_consensus_peaks/", names(peaks), ".bed")
 new_filenames
 ```
@@ -208,12 +212,15 @@ for(i in 1:length(peaks)) {
 
 # let's take a look in UCSC !
 (1) file transfer a consensus peak to your comp
-(2) go to class UCSC account BCHM_5631
-(3) custome tracks and load consensus file.
-(4) load raw data for your protein 
+(2) go to class UCSC account BCHM_5631 under like my data think
+(3) my data- custom tracks and load consensus file.
+(4) load raw data for your protein- load by file then hit submit 
 (5) compare consensus peaks with raw data!
 
-
+username password- BCHM_5631
+make sure your in the class file- when you want to compare to older class click them underneith and hit show then refresh
+also zoom out a lot 
+block in your data is a consensus peak- zoom all the way out will see lines/boxes this is consensus peaks then compare to old class ones
 
 ###########################
 ExeRcise: create function

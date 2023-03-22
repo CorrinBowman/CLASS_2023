@@ -6,17 +6,20 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+annotations- feature of genome, example gene- then gene has many annotations like exons 
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = F)
 library(tidyverse)
 library(GenomicRanges)
-source("../../../util/my_class_functions.R")
+#source("../../../util/my_class_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/BCHM5631_my_class_functions.R")
 
 # filepath to import peaks
-basepath <- "/scratch/Shares/rinnclass/CLASS_2023/JR"
-peak_path <- "CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/consensus_peaks"
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman"
+peak_path <- "CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks"
 consensusPeakPath <- file.path(basepath, peak_path)
 ```
 Accompanying Youtube Video:
@@ -43,10 +46,10 @@ set working directory to CLASS_2023/CLASSES/05_R_analyses/01_peak_features
 
 
 # Let's start importing all the files we need:
-
+consensus_peaks_files
 ```{r importing files}
 
-consensus_peaks_files <- list.files(consensusPeakPath, 
+ consensus_peaks_files<- list.files(consensusPeakPath, 
                                              pattern = "*.bed",
                                              full.names = TRUE)
 
@@ -55,7 +58,7 @@ consensus_peaks <- lapply(consensus_peaks_files, rtracklayer::import)
 
 # adding DBP name to each list of GRanges from the file name
 # note gsub requires no space around or argument ( | )
-names(consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2023/JR/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/consensus_peaks/|_consensus.bed","", consensus_peaks_files)
+names(consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/Consensus Peaks/|_consensus.bed","", consensus_peaks_files)
 
 ```
 
@@ -77,7 +80,7 @@ table(gencode_gr$type)
 # exporting all genes file (we will save all the .Rdata too at the end)
 rtracklayer::export(gencode_genes, "results/gene_annotations/gencode_genes.gtf")
 
-# mRNA genes (called "protein_coding") in this version of gencode changes sometimes !
+# mRNA genes (called "protein_coding") in this version of gencode changes sometimes ! get mrna genes 
 mrna_genes <- gencode_genes[gencode_genes$gene_type %in% "protein_coding"] 
 
 rtracklayer::export(mrna_genes, "results/gene_annotations/mrna_genes.gtf")
@@ -105,7 +108,7 @@ lncrna_mrna_genes <- rtracklayer::import("results/gene_annotations/mrna_lncrna_g
 
 # Nice that loaded so much faster -- lets see as DF
 lncrna_mrna_genes_df <- lncrna_mrna_genes %>% as.data.frame()
-# easy to read and tons of info !
+# easy to read and tons of info ! 
 ```
 
 Now let's make a promoter annotation file and gene_body for future use.
@@ -113,10 +116,10 @@ Now let's make a promoter annotation file and gene_body for future use.
 # promoter regions with Genomic Ranges funciton "promoters"
 ?promoters
 
-# creating and exporting promoter annotations
+# creating and exporting promoter annotations, making window upsteam downstream of width 
 lncrna_mrna_promoters <- promoters(lncrna_mrna_genes, upstream = 1000, downstream = 1000)
 # check right size
-width(lncrna_mrna_promoters)
+width(lncrna_mrna_promoters) # 2000 
 rtracklayer::export(lncrna_mrna_promoters, "results/gene_annotations/lncrna_mrna_promoters.gtf")
 
 
@@ -166,14 +169,17 @@ occurence (matrix of 1 if overlap 0 if not)
 
 ```{r count_peaks_per_feature function !}
 
-# counting promoter overlaps
+# counting promoter overlaps, giving us the function in this count peak per feature file have to source his file 
+source ("../../../util/my_class_functions.R")
 promoter_peak_counts <- count_peaks_per_feature(lncrna_mrna_promoters, consensus_peaks, type = "counts")
 
 # ok we see this is a large matrix of the number of overlaps at each promoter
 # cols are promoters, rows are DBPS
-# so now we just row sum for each DBP !
+# so now we just row sum for each DBP ! can know how many promoters overlapped total 
 
 num_peaks_df$peaks_overlapping_promoters <- rowSums(promoter_peak_counts)
+# when there is more promoter overlaps than total peaks it is becasue- protein likes to bind w promoters, peak are mostly overlapping promoters, the start of a promoter will never have a nucleosome it has a nuclesome free regions- so they are separated and counts it as 2 peaks- counting 2 as 1 promoters can overlap, as promoter window increases you get more overlaps- think theres more promoters in that window
+# look to see if genes are supposed to be overlapping promoters or not then see if the results show that
 
 # Now let's break these promoters into two groups "lncrna" and "mrna"
 # We will use the gene_id objects we made above to index and separate them.
@@ -204,7 +210,9 @@ genebody_peak_counts <- count_peaks_per_feature(mrna_lncrna_genes,
 
 # Now let's extract the overlaps the same way we did for promoters above
 
-# All gene bodies
+# All gene bodies- looking to see if the overlaps are in the gene body 
+# if gene not rly binding promoters then look to see should be binding more of gene body 
+# can compare different rna in table which binds more 
 num_peaks_df$peaks_overlapping_genebody <- 
   rowSums(genebody_peak_counts)
 
@@ -225,7 +233,7 @@ write_csv(num_peaks_df, "num_peaks_df.csv")
 # this is a handy lesson of how to download any file in R
 We have a large group of different DBPs so let's import some annotaitons of which
 ones are transcription factors etc. A paper in Cell is one of the better annotations --
-however they are never perfect :)
+however they are never perfect :) # looking for transcription factors- looking at which proteins are TF or not
 
 Human TF annotations:
 https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx
@@ -235,7 +243,7 @@ Let's download the file using R (we could also use curl/wget in BASH)
 
 url <- "https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx"
 
-destination_for_url <- "results/TF_annotations.xlsx"
+destination_for_url <- "results/TF_annotations.xlsx" #excel file
 
 # to download we can use download.file
 download.file(url, destination_for_url)
@@ -250,7 +258,7 @@ a new 'read' function (we have used 'read.table' & 'read.csv' etc).
 
 To this end we will use readX1 'read_excel' function.
 ```{R merging in TF annotation data}
-
+# have multiple sheets in excel we only want sheet 2 and skip first line 
 #redx1::read_excel to import
 human_tfs <- readxl::read_excel("results/TF_annotations.xlsx",
                                 sheet = 2, skip = 1)
@@ -259,7 +267,7 @@ human_tfs <- readxl::read_excel("results/TF_annotations.xlsx",
 # let's rename the 4th column to indicate if it is a TF.
 names(human_tfs)[4] <- "is_tf"
 
-# now let's intersect gene names that are in our ChIP data and has TF identity.
+# now let's intersect gene names that are in our ChIP data and has TF identity, making all words lowercase so when it searches they match- mathicng the hum tf file to our gene names, askinf how many genes that are ours- are in the dta set- all of min are 5/5
 length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
 ```
 
@@ -267,7 +275,7 @@ length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
 
 ```{R merging annotation file to num_peaks_df}
 
-# first let's filter and grab the first 4 columns that match DBPs in num_peaks_df
+# first let's filter and grab the first 4 columns that match DBPs in num_peaks_df, reducing column to 4  
 human_tfs <- human_tfs[tolower(human_tfs$Name) %in% tolower(num_peaks_df$dbp), 1:4]
 
 
@@ -280,9 +288,10 @@ names(human_tfs) <- c("ensembl_id",
 # Now comes the actual merge. Let's look at it first
 # ?merge
 
-num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T)
+#merging the new tf tabke info with our num peaks file 
+num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T) 
 
-# Let's check how many NAs -- we should have some missing values.
+# Let's check how many NAs -- we should have some missing values  
 dim(num_peaks_df[is.na(num_peaks_df$tf),])
 
 # Ok looks good let's write it out:

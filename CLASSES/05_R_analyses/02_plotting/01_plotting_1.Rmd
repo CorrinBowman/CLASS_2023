@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = F)
 
 library(ggplot2)
-library(ggpubr)
+#library(ggpubr) doesnt work 
 library(tidyverse)
 
 source("../../../util/plotting_functions.R")
@@ -59,7 +59,7 @@ Layer 1 : DATA (data types matter so good to label object accrodingly)
 # before we get started let's import that data we are going to plot from num_peaks_df. 
 num_peaks_df <- read_csv('../01_peak_features/results/num_peaks_df.csv')
 
-# this maybe a bit boring so we can try reading in the bigger dataset we will have at end of class
+# this maybe a bit boring so we can try reading in the bigger dataset we will have at end of class, for all 480 need to replace this with my file we made before 
 big_num_peaks_df <- read_csv("/scratch/Shares/rinnclass/CLASS_2023/data/data/2022_num_peaks_df.csv")
 
 # not in class you can download here:
