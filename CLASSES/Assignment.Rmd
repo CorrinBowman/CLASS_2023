@@ -269,8 +269,6 @@ ELF1- greatest amount of overlaps with both lncRNA and mRNA promoters
 
 EP300- least amount of overlaps with both lncRNA and mRNA promoters
 
- 
-
 
 # Now I want to compare the overlaps with lncRNA and mRNA promoters seperately 
 ```{r}
