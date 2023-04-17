@@ -13,12 +13,12 @@ options(stringsAsFactors = FALSE)
 library(tidyverse)
 # install.packages("httr")
 library(httr)
-# install.packages("janitor")
+#install.packages("janitor")
 library(janitor)
-# install.packages("purrr")
+#install.packages("purrr")
 library(purrr)
 # source("../../../../../util/class_functions.R")
-# source("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/util/encode_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/encode_functions.R")
 ```
 Accompanying YouTube Video:
 https://youtu.be/4qO4UsxQp8s
@@ -65,6 +65,7 @@ request_url <- "https://www.encodeproject.org/report.tsv?type=File&status=releas
 
 # the field parameter is where we tell it which columns or which pieces of data we want to get.
 # this retrieves read_count, md5sum, controlled_by, paired_end, paired_with, replicate, and target
+#this url is coded- so you can make it- write a function to write these url 
 # NOTE API language use :
 #   (1) file_format=fastq&dataset=%2Fexperiments%2FENCSR541TIG%2F&field=accession&
 #   (2) dataset=%2F
@@ -225,8 +226,8 @@ dat <- encode_file_info("ENCSR541TIG")
 # Nice we just retrieved all the information we wanted for this experiment accession!
 ```
 Moving forward we can use this function to download over 400 experimental acessions !
-We will do this later in calss but would be way to cumbersome to do on the web.
-Thus this funciton should be pretty handy in the future !
+We will do this later in class but would be way to cumbersome to do on the web.
+Thus this function should be pretty handy in the future !
 
 # Now that we have the file info we can dowload 
 
@@ -255,6 +256,8 @@ cd fastq
 # open terminal (in working dir) and paste this in (same as web file download list)
 
 wget -O files.txt "https://www.encodeproject.org/batch_download/?type=Experiment&status=released&assay_slims=Transcription&assay_slims=Transcription&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&biosample_ontology.term_name=HepG2&biosample_ontology.classification=cell+line&assay_title=total+RNA-seq&files.read_length=50&limit=all&advancedQuery=date_released:[2009-01-01%20TO%202021-12-31]"
+
+#put all this in bash terminal below
 
 # this is the same as:
 # https://www.encodeproject.org/matrix/?type=Experiment&control_type!=*&status=released&perturbed=false&assay_title=total+RNA-seq&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&biosample_ontology.term_name=HepG2&files.run_type=paired-ended

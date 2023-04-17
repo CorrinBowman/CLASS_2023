@@ -15,8 +15,16 @@ library(DESeq2)
 
 # DEseq2 needs a specific package of 'locfit' that has to be installed first
 install.packages("https://cran.r-project.org/src/contrib/Archive/locfit/locfit_1.5-9.4.tar.gz", repos=NULL, type="source")
+
+
+#install.packages("https://cran.r-project.org/src/contrib/Archive/locfit/locfit_1.5-9.4.tar.gz", repos=NULL, type="source")
+#install.packages("https://cran.r-project.org/src/contrib/Archive/latticeExtra/latticeExtra_0.6-29.tar.gz", repos=NULL, type="source")
+#install.packages("https://cran.r-project.org/src/contrib/Archive/Hmisc/Hmisc_3.6-0.tar.gz", repos=NULL, type="source")
+
+
 # Now we can install DEseq2
-BiocManager::install("DESeq2")
+#BiocManager::install("DESeq2")
+
 
 # now load the package
 library(DESeq2)
@@ -66,14 +74,18 @@ Let's start by fixing our sample_sheet!
 USe the terminal to "cp" the folder to the current working directory:
 <your_folder>/CLASS_2023/CLASSES/05_R_analyses/analysis/05_RNAseq/01_differential_expression
 
-# cp samplesheet.csv ../../01_differential_expression/results
-# cp design.csv ../../01_differential_expression/results
+/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression
+
+# cp samplesheet.csv /scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression
+
+# cp design.csv cp samplesheet.csv /scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression
+
 
 
 ```{r import sample sheet}
 
 # First let's read in th sample sheet we made in 00_NF_core_pipeline
-samplesheet <- read_csv("results/samplesheet.csv")
+samplesheet <- read_csv("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression/samplesheet.csv")
 
 # First changing the total sample to homo_sapiens_insoluble_fraction
 samplesheet[which(samplesheet$sample_name == "homo_sapiens_hepg2_R1"), "condition"] <- "homo_sapiens_insoluble_cytoplasmic_fraction"
@@ -100,7 +112,9 @@ samplesheet[which(samplesheet$sample_name == "homo_sapiens_hepg2_insoluble_cytop
 
 
 # saving this to sample_sheets folder
-write.csv(samplesheet, "results/corrected_samplesheet.csv")
+write.csv(samplesheet, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression/results/corrected_samplesheet.csv")
+
+samplesheet <- read_csv('corrected_samplesheet.csv')
 
 ```
 
@@ -121,7 +135,7 @@ g2s <- gencode_genes %>% as.data.frame() %>%
   dplyr::select(gene_id, gene_name)
 
 # writingn this out to avoid loading Gencode in the future
-write.csv(g2s, "results/g2s.csv")
+write.csv(g2s, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression/results/g2s.csv")
 
 ```
 
@@ -146,7 +160,7 @@ https://salmon.readthedocs.io/en/latest/file_formats.html
 ## NOTE ## NEVER USE TPM or any other normalized counts with DeSeq!!
 
 # reading in salmon counts:
-counts <- read_csv("../00_RNAseq_download_NF_core_pipeline/00_NF_CORE_RNAseq_Pipeline_run/results/salmon/salmon_merged_gene_counts.csv")
+counts <- read_csv("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/00_NF_CORE_RNAseq_Pipeline_run/run2/results/salmon/salmon_merged_gene_counts.csv")
 
 # adding rownames and converting to a matrix
 counts <- column_to_rownames(counts, "gene_id") %>%

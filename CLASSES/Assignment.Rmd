@@ -62,6 +62,7 @@ dbps <- unique(sapply(names(peak_list), function(x) {
 consensus_list <- lapply(dbps, consensus_from_reduced, peak_list)
 names(consensus_list) <- dbps
 
+
 num_consensus_peaks <- sapply(consensus_list, length) %>% 
   as.data.frame() %>%
   rownames_to_column( var = "dbp") %>%
@@ -170,13 +171,32 @@ peak_path <- "CLASS_2023/CLASSES/05_R_analyses//Class_exercise/Results/consensus
 consensusPeakPath <- file.path(basepath, peak_path)
 
 
- consensus_peaks_files<- list.files(consensusPeakPath, 
-                                             pattern = "*.bed",
+ consensus_peaks_files <- list.files(consensusPeakPath, 
+                                             pattern = "*consensus.bed",
                                              full.names = TRUE)
+
 
 consensus_peaks <- lapply(consensus_peaks_files, rtracklayer::import)
 
 names(consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/consensus_peaks/|_consensus.bed","", consensus_peaks_files)
+
+# Let's start with loading in the number of peaks each DBP has -- using length.
+num_peaks_df <- data.frame("dbp" = names(consensus_peaks),
+                           "num_peaks" = sapply(consensus_peaks, length))
+
+
+# Now let's get the total amount of the genome covered by all the peaks for a given DBP.
+num_peaks_df$total_peak_length <- sapply(consensus_peaks, function(x) sum(width(x)))
+
+# counting promoter overlaps
+promoter_peak_counts <- count_peaks_per_feature(lncrna_mrna_promoters, consensus_peaks, type = "counts")
+
+# ok we see this is a large matrix of the number of overlaps at each promoter
+# cols are promoters, rows are DBPS
+# so now we just row sum for each DBP !
+num_peaks_df$peaks_overlapping_promoters <- rowSums(promoter_peak_counts)
+
+
 
 gencode_gr <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/data/data/genomes/gencode.v32.annotation.gtf")
 
@@ -205,10 +225,12 @@ lncrna_mrna_genes <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/c
 # Nice that loaded so much faster -- lets see as DF
 lncrna_mrna_genes_df <- lncrna_mrna_genes %>% as.data.frame()
 
+# importing promoter annotations
+lncrna_mrna_promoters <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/lncrna_mrna_promoters.gtf")
 
-lncrna_mrna_promoters <- promoters(lncrna_mrna_genes, upstream = 1000, downstream = 1000)
+#lncrna_mrna_promoters <- promoters(lncrna_mrna_genes, upstream = 1000, downstream = 1000)
 # check right size
-width(lncrna_mrna_promoters) # 2000 
+#width(lncrna_mrna_promoters) # 2000 
 rtracklayer::export(lncrna_mrna_promoters, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/gene_annotations/lncrna_mrna_promoters.gtf")
 
 
@@ -261,6 +283,10 @@ num_peaks_df$peaks_overlapping_mrna_promoters <- rowSums(promoter_peak_counts[,m
 
 write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/num_peaks_df.csv")
 
+promoter_peak_counts <- count_peaks_per_feature(lncrna_mrna_promoters, consensus_peaks, type = "counts")
+
+num_peaks_df$peaks_overlapping_promoters <- rowSums(promoter_peak_counts)
+
 
 
 ```
@@ -275,9 +301,6 @@ For my proteins the majority of the peak overlaps are more mRNA compared to lncR
 ```{r}
 
 source ("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/my_class_functions.R")
-promoter_peak_counts <- count_peaks_per_feature(lncrna_mrna_promoters, consensus_peaks, type = "counts")
-
-num_peaks_df$peaks_overlapping_promoters <- rowSums(promoter_peak_counts)
 
 genebody_peak_counts <- count_peaks_per_feature(mrna_lncrna_genes, 
                                                 consensus_peaks, 
@@ -348,7 +371,7 @@ write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/
 ```
 ## results: I find the max number of proteins on a promoter to be X
 
-10
+5
 
 
 
@@ -356,26 +379,26 @@ write_csv(peak_occurence_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/
 # in a cell paper I found and see
 
 ```{r}
+
 url <- "https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx"
 
-destination_for_url <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/TF_annotations/TF_annotations.xlsx" 
+destination_for_url <- "results/TF_annotations.xlsx"
 
 # to download we can use download.file
 download.file(url, destination_for_url)
 
-
-human_tfs <- readxl::read_excel("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/TF_annotations/TF_annotations.xlsx" 
-,
+#redx1::read_excel to import
+human_tfs <- readxl::read_excel("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/Class_exercise/Results/TF_annotations//TF_annotations.xlsx",
                                 sheet = 2, skip = 1)
 
 
 # let's rename the 4th column to indicate if it is a TF.
 names(human_tfs)[4] <- "is_tf"
-num_peaks_df <- data.frame("dbp" = names(consensus_peaks),
-                           "num_peaks" = sapply(consensus_peaks, length))
 
+# now let's intersect gene names that are in our ChIP data and has TF identity.
 length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
 
+# first let's filter and grab the first 4 columns that match DBPs in num_peaks_df
 human_tfs <- human_tfs[tolower(human_tfs$Name) %in% tolower(num_peaks_df$dbp), 1:4]
 
 
@@ -384,12 +407,17 @@ names(human_tfs) <- c("ensembl_id",
                       "dbp",
                       "dbd",
                       "tf")
-num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T) 
 
-# Let's check how many NAs -- we should have some missing values  
+# Now comes the actual merge. Let's look at it first
+# ?merge
+
+num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T)
+
+# Let's check how many NAs -- we should have some missing values.
 dim(num_peaks_df[is.na(num_peaks_df$tf),])
 
 
+num_peaks_df
 
 
 ```
@@ -418,13 +446,11 @@ ggplot(num_peaks_df, aes(x = num_peaks,
 # Now I want to color my plot by wether the protein is a TF or not.
 ```{r}
 
-  
- # ggplot(num_peaks_df, aes(x = num_peaks, 
-                # y = total_peak_length,
-                 #color = tf == "Yes")) +
- # geom_point()
-
-
+  #num_peaks_df
+  ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length,
+                 color = tf == "Yes")) +
+ geom_point()
 
 ```
 
@@ -442,11 +468,11 @@ hist
 # Now I want to facet this by the type of DNA binding domain my protein has.
 ```{r}
 
-#ggplot(num_peaks_df, aes(x = num_peaks, 
-                # y = total_peak_length
-              #  )) +
- # facet_wrap(dbd ~ .) +
- # geom_point() 
+ggplot(num_peaks_df, aes(x = num_peaks, 
+                 y = total_peak_length
+               )) +
+  facet_wrap(dbd ~ .) +
+  geom_point() 
 
 
 

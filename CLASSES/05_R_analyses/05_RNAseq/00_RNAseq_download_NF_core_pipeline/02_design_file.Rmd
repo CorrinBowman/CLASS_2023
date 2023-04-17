@@ -18,7 +18,7 @@ library(janitor)
 # install.packages("purrr")
 library(purrr)
 
-source("../../../../util/my_class_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/my_class_functions.R")
 
 ```
 Accompanying YouTube Video
@@ -81,15 +81,17 @@ So one row will have many files in it -- similar to have a bunch of files in a s
 ```{r reading in sample sheet}
 
 # We'll also rename this Accession column to clarify between experiment_accession and file_accession.
-samples <- read.table("data/samples.txt",
+
+#first you have to download this(right below the wget)!!!! put it in the terminal in same file and then you can run 
+
+samples <- read.table("samples.txt",
                       sep = "\t", skip = 1, header = T) %>%
   dplyr::rename(experiment_accession = Accession) 
 
 # It's seems mundane but starting here is the best way to make a "reproducible" sample sheet.
 # Bottom line: the download to code to analysis is the way to reproducibility (this worked a year later :)
 
-# If you don't already have the samples.txt you can get it here:
-
+# If you don't already have the samples.txt you can get it here:- 
 # wget -O samples.txt "https://www.encodeproject.org/report.tsv?type=Experiment&status=released&assay_slims=Transcription&assay_slims=Transcription&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&biosample_ontology.term_name=HepG2&biosample_ontology.classification=cell+line&assay_title=total+RNA-seq&files.read_length=50&limit=all&advancedQuery=date_released:[2009-01-01%20TO%202021-12-31]"
 
 # sample site to get report:
@@ -234,7 +236,7 @@ Additionally from all of this information we've gathered we can create a text fi
 # Let's create an md5.txt to run the checksums
 # We will use the same approach for the mv script.
 
-md5 <- samples %>% 
+md5 <- samples %>%  # here you need double spaces for md5 stuff 
   ungroup() %>%
   dplyr::select(md5sum, fastq_file) %>%
   # note double space for md5 requirements 
@@ -245,7 +247,7 @@ write_lines(md5$line, "md5.txt")
 
 # Now let's run it from R to BASH with "system()" function
 # NOTE THIS TAKES A FEW MINUTES 
-md5_results <- system("md5sum -c md5.txt")
+md5_results <- system("md5sum -c md5.txt") #-c means check the list 
 
 # NOTE that we changed the file name but this isn't checked by md5sum
  
@@ -324,7 +326,7 @@ samplesheet <- samplesheet %>%
 ```{bash }
 
 # navigate to this path:
-cd <your_folder>/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline
+cd corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/00_NF_CORE_RNAseq_Pipeline_run
 
 mkdir 00_NF_CORE_RNAseq_Pipeline_run
 
@@ -343,9 +345,12 @@ Let's create a sample column using mutate -- and we'll clean up the names
 
 ```{r creating design file}
 # adding path to fastq files so NF_CORE knows where to get them
-base_path <- "/scratch/Shares/rinnclass/CLASS_2023/JR"
-fastq_path <- "CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/data/fastq2/"
-final_path <- c(file.path(base_path, fastq_path))
+base_path <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman"
+fastq_path <- "/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/00_NF_CORE_RNAseq_Pipeline_run"
+#final_path <- c(file.path(base_path, fastq_path))
+final_path <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/fastq/"
+
+
 
 # There's spaces in the names currently and we need to get rid of those.
 design <- samplesheet %>%
@@ -377,7 +382,7 @@ design <- design %>%
   mutate(sample = gsub("_r1", "", sample),
          sample = gsub("_r2", "", sample))
 
-# let's test that the path to fastq works:
+# let's test that the path to fastq works: # this should be true if its false prob in wrong file directory spot- re check file path you set above
 all(sapply(design$fastq_1, file.exists))
 all(sapply(design$fastq_2, file.exists))
 ```
@@ -386,7 +391,8 @@ all(sapply(design$fastq_2, file.exists))
 # NOTE be sure to write this out in 00_NF_CORE_RNAseq_pipeline_run
 ```{r saving design and samples file}
 
-# write out design.csv
+# write out design.csv THESE NEED TO SAVE IN FILE WITH SAMPLES- /scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/00_NF_CORE_RNAseq_Pipeline_run
+
 write_csv(design, "design.csv")
 
 # write out samples.csv
@@ -400,4 +406,13 @@ Now we have the raw files downloaded and the samplesheet needed for downstream a
 We'll do this in the RNAseq II.
 
 
+i am running- this pipeline for RNA seq here: SET AS WORKING DRECTORY HERE 
 
+/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/00_RNAseq_download_NF_core_pipeline/00_NF_CORE_RNAseq_Pipeline_run2
+
+
+source ~/.profile
+
+nextflow -version
+
+singulairy warning

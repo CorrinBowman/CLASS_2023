@@ -296,7 +296,7 @@ dim(num_peaks_df[is.na(num_peaks_df$tf),])
 
 # Ok looks good let's write it out:
 num_peaks_df <- num_peaks_df[,1:12]
-write_csv(num_peaks_df, "results/num_peaks_df.csv")
+write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/num_peaks_df.csv")
 
 ```
 

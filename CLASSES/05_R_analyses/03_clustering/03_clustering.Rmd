@@ -10,11 +10,13 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = F)
+
+#WARNINGGGG WARNING ALL THESE FIGURES ARE FROM USING JOHNS FILE AND PROTEINS- NEED TO GET MY FILE FROM THE KNIT WORKING PROPERLY TO HAVE CORRECT GRAPHS BELOW***********************************
 library(tidyverse)
 library(ggdendro)
 library(GenomicRanges)
 
-# install.packages(pheatmap)
+#install.packages("pheatmap")
 library(pheatmap)
 
 ```
@@ -39,7 +41,11 @@ Ok let's get started by grabbing the peak_occurrence_matrix from 14_2_our_data_i
 
 #let's look at the promoter peak occurence matrix (takes a min to load)
 # read.table will make this a data.frame but will keep row names.
-promoter_peak_occurence_matrix <- read.table("../01_peak_features/results/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+promoter_peak_occurence_matrix <- read.table("/scratch/Shares/rinnclass/CLASS_2023/JR/CLASS_2023/CLASSES/05_R_analyses/01_peak_features/results/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+
+#trying my data once i did the re do 
+promoter_peak_occurence_matrix <- read.table("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/DBPS/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+
 
 # Converting to a matrix format for correlation analysis
 promoter_peak_occurence_matrix <- as.matrix(promoter_peak_occurence_matrix)
@@ -70,6 +76,8 @@ colnames(promoter_peak_occurence_matrix)
 test <- dist(promoter_peak_occurence_matrix[1:2,], method = "euclidean")
 test
 
+#number was 16 which it should be between -1 and 1 to interpretp- so dont use euclidean
+
 # There are a number of measures to calculate distance between two vectors and we can check those out in the documentation.
 ?dist
 
@@ -80,7 +88,9 @@ test
 test2 <- dist(promoter_peak_occurence_matrix[1:2,], method = "binary")
 test2
 
-# Now let's create distance matrix for each pairwise vector comparison for the whole matrix now.
+# now i got 1- so they are the same binding 
+
+# Now let's create distance matrix for each pairwise vector comparison for the whole matrix now. goes through all pairs and correlates 1 is perfect correlated of DBP
 peak_occurence_dist <- dist(promoter_peak_occurence_matrix, method = "binary")
 peak_occurence_dist
 ```
@@ -92,7 +102,7 @@ vectors that have small distances (high correlation), and will iterate that proc
 everything is in the same cluster.
 
 ```{R hclust of distance matrix}
-# let's take a look at hclust
+# let's take a look at hclust makes a family tree graphic 
 
 ?hclust
 
@@ -106,9 +116,12 @@ plot(bin_hier)
 # let's take a look at what we got and see distance distribution
 hist(bin_hier$height)
 
+# height is how far you have to go down the branches to get to that protein 
+
 # To make this bigger, we can plot it as a pdf the syntax is:
 # pdf() tell file path to save and properties then we plot
 # finally we call dev.off to take the output into PDF instead of plots.
+# the longer you have to move in the graph lines- the more different they are not related 
 
 # We can order this before saving it
 # Now let's order the DBPs 
@@ -124,7 +137,7 @@ bin_hier$height[[4]]
 # Note we can't use ggsave here :( but this is a great way to save
 # pdfs for all plots.
 
-pdf("figures/dbp_hclust_dendro.pdf", height = 12, width = 70)
+pdf("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/figures/dbp_hclust_dendro.pdf", height = 12, width = 70)
 plot(bin_hier)
 dev.off()
 
@@ -167,7 +180,7 @@ Now let's use GGDENDRO (dendrogram) package that will plot the branch lengths th
 
 # Nice let's save this using 'ggsave': since we used ggplot
 
-ggsave("figures/ggdendro_plot.pdf", height = 50, width = 12, limitsize = F)
+ggsave("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/figures/ggdendro_plot.pdf", height = 50, width = 12, limitsize = F)
 
 ```
 
@@ -202,7 +215,7 @@ bin_hier_lncrna <- hclust(dist(lncrna_peak_occurence, method = "binary"))
 ggdendro::ggdendrogram(bin_hier_lncrna, rotate = T,  size = 3)
  
 # Now let's save this figure
-ggsave("figures/lncrna_hclust_binary_dist.pdf", height = 49, width = 6)
+ggsave("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/figures/lncrna_hclust_binary_dist.pdf", height = 49, width = 6)
 
 
 ```
@@ -223,7 +236,7 @@ bin_hier_mrna <- hclust(dist(mrna_peak_occurence, method = "binary"))
 ggdendro::ggdendrogram(bin_hier, rotate = TRUE,  size = 3)
 
 # saving
-ggsave("figures/mrna_hclust_binary_dist.pdf", height = 44, width = 6)
+ggsave("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/figures/mrna_hclust_binary_dist.pdf", height = 44, width = 6)
 
 # Cool we are making some good figures -- now let's dig into the biology
 # Find an unknown protein cluster that has a known protein gene (hint ZNF)
@@ -259,7 +272,7 @@ pheatmap(promoter_peak_occurence_matrix, show_colnames = F, clustering_distance_
 
 # Save heat map.
 
-pdf("figures/heatmap.pdf", height = 12, width = 12)
+pdf("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/00_consensus_peaks/REDO Assignment/figures/heatmap.pdf", height = 12, width = 12)
 pheatmap(promoter_peak_occurence_matrix, show_colnames = F, clustering_distance_rows = "binary", clustering_distance_cols = "binary")
 dev.off()
 

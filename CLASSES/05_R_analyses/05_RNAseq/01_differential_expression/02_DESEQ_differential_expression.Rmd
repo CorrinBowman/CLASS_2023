@@ -231,6 +231,8 @@ res_df <- res %>% as.data.frame() %>%
 
 write_rds(res_df, "results/nuclear_cyto_results_df.rds")
 
+#where we are saving stuff- /scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression/results 
+
 ```
 
 QC plot: Volcano 
@@ -243,11 +245,17 @@ QC plot: Volcano
 # y-axis = pval
 # Plotting volcano plot of nuclear vs cytoplasmic
 
+#pos number is more cytoplasmic
+#blue is significant p value 10^-9 think
+#negative is more nuclear
+
 ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj), color = -log10(res_df$padj) > 90)) + 
   geom_point()
 
 # saving volcano plot
 ggsave("figures/nuc_cyto_volcano.pdf")
+
+#where we are saving stuff- /scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/05_RNAseq/01_differential_expression/figures
 ```
 
 We can see several highly cyto and nuclear genes
@@ -279,7 +287,7 @@ cyto_genes <- res_df %>%
   filter(log2FoldChange > 1, padj < 0.05)
 
 # saving file
-write_csv(cyto_genes, "cyto_genes.csv")
+write_csv(cyto_genes, "results/cyto_genes.csv")
 
 
 ```

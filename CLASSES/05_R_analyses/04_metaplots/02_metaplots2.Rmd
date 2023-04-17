@@ -6,6 +6,12 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+if need tidyverse
+packageurl <- "https://github.com/tidyverse/tidyverse/archive/refs/tags/v1.3.1.tar.gz"
+install.packages(packageurl, repos=NULL, type="source")
+then have to get ggplot2 
+install.packages(ggplot2)
+then library(tidyverse)
 
 ```{r setup, include=FALSE}
 options(stringsAsFactors = FALSE)
@@ -14,10 +20,12 @@ library(GenomicRanges)
 library(ggplot2)
 library(rtracklayer)
 library(tidyverse)
-library(ComplexHeatmap)
+#library(ComplexHeatmap)
 library(circlize)
-source("../../../util/my_class_functions.R")
-source("../../../util/_setup.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/my_class_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/util/_setup.R")
+#BiocManager::install("ComplexHeatmap")
+
 ```
 Accompanying YouTube Video:
 https://youtu.be/MQnvp8C3si8
@@ -50,27 +58,31 @@ profile_tss is the same as the code we ran in 01_metaplots.Rmd.
 Let's see how handy this function is now!
 ```{r individual meta plots}
 
+#these are his proteins, need to put my names in 
 # HEP300
 plot(profile_tss(consensus_peaks[["EP300"]], lncrna_mrna_promoters))
-
 # H3K27me3
 plot(profile_tss(consensus_peaks[["H3K27me3"]], lncrna_mrna_promoters))
-
 # H3K36me3
 plot(profile_tss(consensus_peaks[["H3K36me3"]], lncrna_mrna_promoters))
-
 # H3K4me3
 plot(profile_tss(consensus_peaks[["H3K4me3"]], lncrna_mrna_promoters))
-
 # HDAC2
 plot(profile_tss(consensus_peaks[["HDAC2"]], lncrna_mrna_promoters))
-
 # RCOR1
 plot(profile_tss(consensus_peaks[["RCOR1"]], lncrna_mrna_promoters))
-
 # REST
 plot(profile_tss(consensus_peaks[["REST"]], lncrna_mrna_promoters))
 
+#dev.off() do this if plot is not showing up 
+
+#my proteins 
+
+plot(profile_tss(consensus_peaks[["CEBPZ"]], lncrna_mrna_promoters))
+plot(profile_tss(consensus_peaks[["CHD2"]], lncrna_mrna_promoters))
+plot(profile_tss(consensus_peaks[["CTCF"]], lncrna_mrna_promoters))
+plot(profile_tss(consensus_peaks[["ELF1"]], lncrna_mrna_promoters))
+plot(profile_tss(consensus_peaks[["EP300"]], lncrna_mrna_promoters))
 
 ```
 Cool that works but what if we had 480 DBPs as we will soon
@@ -89,7 +101,7 @@ When we move to all DBPs (480) it can take 4 hours !
 metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
 
 # refresh what the output of profile_tss is:
-test <- profile_tss(consensus_peaks[["HDAC2"]], lncrna_mrna_promoters)
+test <- profile_tss(consensus_peaks[["CEBPZ"]], lncrna_mrna_promoters)
 
 # Writting a for loop to calculate promoter coverage for all consensus_peaks:
 for(i in 1:length(consensus_peaks)) {
@@ -103,7 +115,7 @@ for(i in 1:length(consensus_peaks)) {
 # Take a look at metaplot df should be length: nDBPs * 2000
 
 # write_rds(metaplot_df, "metaplot_df.rds")
-write_rds(metaplot_df, "results/metaplot_df_final.rds")
+write_rds(metaplot_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/05_R_analyses/04_metaplots/results/metaplot_df_final.rds")
 
 ```
 
@@ -133,10 +145,10 @@ metaplot_filtered_matrix <- metaplot_df %>%
 # Let's see how many have NA values
 table(rowSums(is.na(metaplot_filtered_matrix)))
 
-# If there are any NAs Let's filter out those is.na
-# metaplot_filtered_matrix <- metaplot_filtered_matrix[rowSums(is.na(metaplot_filtered_matrix)) == 0,]
+# If there are any NAs Let's filter out those is.na- i didnt have any
+ metaplot_filtered_matrix <- metaplot_filtered_matrix[rowSums(is.na(metaplot_filtered_matrix)) == 0,]
 
-# Z-Scale the rows for clustering (not needed for profile plots)
+# Z-Scale the rows for clustering (not needed for profile plots), need to turn rows along column scaling then flipping back to rows think
 mm_scaled <- t(scale(t(metaplot_filtered_matrix)))
 
 # clustering
@@ -151,6 +163,8 @@ par(cex=0.3)
 plot(metaplot_hclust)
 dev.off()
 ```
+clustering based on similarity of profiles
+
 Result: Here I see RCOR1 and REST are similar as 
 perhaps expected since they function together. 
 
@@ -167,7 +181,8 @@ We can set the number of clusters
 to group into smaller groups etc.
 
 ```{r Subsetting cluster numbers}
-# Cut the tree to make some clusters 
+# this is advanced 
+#Cut the tree to make some clusters 
 # let's start with 4 since that is how many i have
 # change to how many your have - 3
 clusters <- cutree(metaplot_hclust, k=4)
@@ -180,7 +195,10 @@ and cluster 4 has 2. Let's make a heatmap to investigate further.
 # Making a heatmap of subclusters binding density patterns.
 
 ```{r Subsetting cluster numbers}
-# Let's make a heatmap now.
+# Let's make a heatmap now.- 
+
+#our heatplot wont work dont worry about it
+
 col_fun <- colorRamp2(c(-3, 0, 3), c("#5980B3", "#ffffff", "#B9605D"))
 split <- data.frame(split = c(rep("-1kb",1000), rep("+1kb", 1000)))
 
@@ -269,6 +287,7 @@ ggplot(combined_metaplot_profile,
   scale_color_manual(values = c("#424242","#a8404c"))
 
 ```
+makes a graph of all of them together instead of 10 graphs separate 
 Result: H3K27me3 looks almost inverse between lncrna and mrna
 Result: Most look similar on lncrna and mrna promoters - 
 despite different profiles for different dbps

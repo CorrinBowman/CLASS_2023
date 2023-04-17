@@ -51,7 +51,7 @@ names(peak_num) <- c("num_peaks")
 peak_num <- peak_num %>%
   rownames_to_column(var = "dbp") %>%
   separate(col = dbp,  into = c('dbp', 'replicate'), sep = "_")
-  # peak_num <- separate(peak_num, col = dbp,  into = c('dbp', 'replicate'), sep = "_")
+   peak_num <- separate(peak_num, col = dbp,  into = c('dbp', 'replicate'), sep = "_")
 #breaks at underscore and take the side for the rplicate number and add as a column 
 
 # let's save this for our records- going to export our data, tell it where to save as second input 
