@@ -1,0 +1,380 @@
+---
+title: "01_peak_features"
+author: "JR"
+date: "8/3/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+annotations- feature of genome, example gene- then gene has many annotations like exons 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = F)
+library(tidyverse)
+library(GenomicRanges)
+#source("../../../util/my_class_functions.R")
+source("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/06_final_going_global/util/my_class_functions.R")
+
+# filepath to import peaks
+basepath <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman"
+peak_path <- "CLASS_2023/CLASSES/06_final_going_global/analysis/01_create_consensus_peaks/results/Consensus Peaks"
+#05_R_analyses/00_consensus_peaks/Consensus Peaks
+consensusPeakPath <- file.path(basepath, peak_path)
+```
+
+
+Accompanying Youtube Video:
+https://youtu.be/OhVcBOov2Go
+
+Goal: Here we are going to create a bunch of human genome annotation objects
+and how many peaks (consensus_peaks) over lap them. 
+
+We are now going to start to create results on binding versus genome features!
+More importantly we are going to save our environment at the end for quick
+loading moving forward.
+
+In short we are on our way to analyzing our custom ChIPseq data !!
+
+
+# Exploring the genome features bound by DBPs
+Now that we have our consensus_peaks across replicates
+we can start to explore where they are bound in the genome.
+Do they bind at promoters? How much of the genome do they cover?
+And many more questions.
+
+# set up working directory: 
+set working directory to CLASS_2023/CLASSES/05_R_analyses/01_peak_features
+
+
+# Let's start importing all the files we need:
+consensus_peaks_files
+```{r importing files}
+
+ consensus_peaks_files<- list.files(consensusPeakPath, 
+                                             pattern = "*.bed",
+                                             full.names = TRUE)
+
+# lapply with import function to make a list of GRanges
+consensus_peaks <- lapply(consensus_peaks_files, rtracklayer::import)
+
+# adding DBP name to each list of GRanges from the file name
+# note gsub requires no space around or argument ( | )
+names(consensus_peaks) <- gsub("/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/06_final_going_global/analysis/01_create_consensus_peaks/results/Consensus Peaks/|_consensus.bed","", consensus_peaks_files)
+
+```
+
+# Loading in Gencode annotation of genomic features
+We will make a file of lncRNA and mRNA promoters from 
+the larger list of GRanges in Gencode
+
+```{R loading gencode and making lncRNA and mRNA annotation files } 
+
+# let's start making lncRNA and mRNA annotation files that we will use moving forward 
+# good way to refamiliarize with GENCODE GRanges -- The whole genome is in there :)
+
+gencode_gr <- rtracklayer::import("/scratch/Shares/rinnclass/CLASS_2023/data/data/genomes/gencode.v32.annotation.gtf")
+
+# now just type == gene annotations
+gencode_genes <- gencode_gr[gencode_gr$type == "gene"] 
+table(gencode_gr$type)
+
+# exporting all genes file (we will save all the .Rdata too at the end)
+rtracklayer::export(gencode_genes, "results/gene_annotations/gencode_genes.gtf")
+
+# mRNA genes (called "protein_coding") in this version of gencode changes sometimes ! get mrna genes 
+mrna_genes <- gencode_genes[gencode_genes$gene_type %in% "protein_coding"] 
+
+rtracklayer::export(mrna_genes, "results/gene_annotations/mrna_genes.gtf")
+table(gencode_genes$gene_type)
+
+# now doing a second index for lncRNA:
+lncrna_genes <- gencode_genes[gencode_genes$gene_type %in% "lncRNA"] 
+
+rtracklayer::export(lncrna_genes, "results/gene_annotations/lncrna_genes.gtf")
+
+# both mRNA and lncRNA annotations together.
+mrna_lncrna_genes <- gencode_genes[gencode_genes$gene_type %in% c("protein_coding","lncRNA")]
+rtracklayer::export(mrna_lncrna_genes, "results/gene_annotations/mrna_lncrna_genes.gtf")
+
+```
+We could do the above for thousands of annotations. But we should consider 
+how big gencode_gr is. A common solution is to make GRange of needed annotations.
+This loads in much faster and can be made into readable dataframe pretty easily.
+
+# let's see what this will be like moving forward !
+
+```{R GRanges Genes to DF} 
+# starting annotation file that we will use moving forward.
+lncrna_mrna_genes <- rtracklayer::import("results/gene_annotations/mrna_lncrna_genes.gtf")
+
+# Nice that loaded so much faster -- lets see as DF
+lncrna_mrna_genes_df <- lncrna_mrna_genes %>% as.data.frame()
+# easy to read and tons of info ! 
+```
+
+Now let's make a promoter annotation file and gene_body for future use.
+```{R promoter annotations} 
+
+# creating and exporting promoter annotations, making window upsteam downstream of width 
+lncrna_mrna_promoters <- promoters(lncrna_mrna_genes, upstream = 1000, downstream = 1000)
+# check right size
+width(lncrna_mrna_promoters) # 2000 
+rtracklayer::export(lncrna_mrna_promoters, "results/gene_annotations/lncrna_mrna_promoters.gtf")
+
+
+# last handy annotation will be lncRNA and mRNA gene IDs to subset
+lncrna_gene_ids <- mrna_lncrna_genes$gene_id[mrna_lncrna_genes$gene_type == "lncRNA"]
+table(mrna_lncrna_genes$gene_type)
+# same for mRNAs
+mrna_gene_ids <-mrna_lncrna_genes$gene_id[mrna_lncrna_genes$gene_type == "protein_coding"]
+
+# note we could have indexed into promoters too -- just getting gene_id
+```
+
+Now that we have all the annotations we need let's start seeing
+what annotations overlap the peaks in our consensus peaks!
+
+# How many peaks overlap gene annotations ??
+Let's analyze how many peaks overlap different genomic features
+we can start by creating a data frame of peak overlaps.
+```{r creating an overlap features data.frame}
+
+# Let's start with loading in the number of peaks each DBP has -- using length.
+
+num_peaks_df <- data.frame("dbp" = names(consensus_list),
+                           "num_peaks" = sapply(consensus_list, length))
+
+
+#where ever consensus peaks- change to consesnsu_list 
+
+# Now let's get the total amount of the genome covered by all the peaks for a given DBP.
+
+num_peaks_df$total_peak_length <- sapply(consensus_list, function(x) sum(width(x)))
+# nice we are getting results !
+
+```
+
+# expanding our num_peaks_df information
+Great we are starting to build an informative DF to incorporate our results.
+Now let's start looking at how many peaks overlap the genome feature files we made.
+
+# count_peaks_per_feature function to find overlaps
+we made a handy function that basically does
+"countOverlaps" of number of times a feature overlaps.
+Take a look at the function -- pretty simple.
+@parameters:
+(1) annotation file in GRanges
+(2) peak file
+(3) counts (number of overlaps), 
+occurence (matrix of 1 if overlap 0 if not)
+
+```{r count_peaks_per_feature function !}
+
+# counting promoter overlaps, giving us the function in this count peak per feature file have to source his file 
+source ("../../../util/my_class_functions.R")
+promoter_peak_counts <- count_peaks_per_feature(lncrna_mrna_promoters, consensus_list, type = "counts")
+
+# ok we see this is a large matrix of the number of overlaps at each promoter
+# cols are promoters, rows are DBPS
+# so now we just row sum for each DBP ! can know how many promoters overlapped total 
+
+num_peaks_df$peaks_overlapping_promoters <- rowSums(promoter_peak_counts)
+# when there is more promoter overlaps than total peaks it is becasue- protein likes to bind w promoters, peak are mostly overlapping promoters, the start of a promoter will never have a nucleosome it has a nuclesome free regions- so they are separated and counts it as 2 peaks- counting 2 as 1 promoters can overlap, as promoter window increases you get more overlaps- think theres more promoters in that window
+# look to see if genes are supposed to be overlapping promoters or not then see if the results show that
+
+# Now let's break these promoters into two groups "lncrna" and "mrna"
+# We will use the gene_id objects we made above to index and separate them.
+
+num_peaks_df$peaks_overlapping_lncrna_promoters <- rowSums(promoter_peak_counts[,lncrna_gene_ids])
+
+# mrna promoter overlaps
+num_peaks_df$peaks_overlapping_mrna_promoters <- rowSums(promoter_peak_counts[,mrna_gene_ids])
+
+# Let's take a look.
+write_csv(num_peaks_df, "results/num_peaks_df.csv")
+
+```
+
+
+
+# extracting gene_body_peak_counts data 
+Now let's do the same thing for gene-bodies
+First we will make a gene-body object like we did for promoters above.
+
+```{r extracting genebody overlpas counts data }
+
+# Finding overlaps with gene_bodies (will take a few minutes again)
+# Note this takes 10-15 min
+genebody_peak_counts <- count_peaks_per_feature(mrna_lncrna_genes, 
+                                                consensus_list, 
+                                                type = "counts")
+
+# Now let's extract the overlaps the same way we did for promoters above
+
+# All gene bodies- looking to see if the overlaps are in the gene body 
+# if gene not rly binding promoters then look to see should be binding more of gene body 
+# can compare different rna in table which binds more 
+num_peaks_df$peaks_overlapping_genebody <- 
+  rowSums(genebody_peak_counts)
+
+# lncRNA gene bodies 
+num_peaks_df$peaks_overlapping_lncrna_genebody <- rowSums(genebody_peak_counts[,lncrna_gene_ids])
+
+# mRNA gene bodies
+num_peaks_df$peaks_overlapping_mrna_genebody <- 
+  rowSums(genebody_peak_counts[,mrna_gene_ids])
+
+# let's take a look.
+# cool lots of info let's save:
+write_csv(num_peaks_df, "num_peaks_df.csv")
+
+#save a bunch of these now- 
+
+save(num_peaks_df, file = "results/num_peaks_df.RData")
+save(lncrna_genes, file = "results/lncrna_genes.RData")
+save(lncrna_mrna_genes, file = "results/lncrna_mrna_genes.RData")
+save(lncrna_mrna_genes_df, file = "results/lncrna_mrna_genes_df.RData")
+save(lncrna_mrna_promoters, file = "results/lncrna_mrna_promoters.RData")
+save(mrna_lncrna_genes, file = "results/mrna_lncrna_genes.RData")
+save(peak_num, file = "results/peak_num.RData")
+save(mrna_genes, file = "results/mrna_genes.RData")
+
+```
+
+# Downloading TF annotation data set
+# this is a handy lesson of how to download any file in R
+We have a large group of different DBPs so let's import some annotaitons of which
+ones are transcription factors etc. A paper in Cell is one of the better annotations --
+however they are never perfect :) # looking for transcription factors- looking at which proteins are TF or not
+
+Human TF annotations:
+https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx
+
+Let's download the file using R (we could also use curl/wget in BASH)
+```{r downloading TF annotation data}
+
+url <- "https://www.cell.com/cms/10.1016/j.cell.2018.01.029/attachment/ede37821-fd6f-41b7-9a0e-9d5410855ae6/mmc2.xlsx"
+
+destination_for_url <- "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/06_final_going_global/analysis/01_create_consensus_peaks/results/TF/TF_annotations.xlsx" #excel file
+
+# to download we can use download.file
+download.file(url, destination_for_url)
+
+# The above is a handy bit of code for downloading data into R directly,but BASH works too
+
+```
+
+# reading in DBP annotations as transcription factor
+Now that we have the file we need to read it in. Since it's excel file we will use
+a new 'read' function (we have used 'read.table' & 'read.csv' etc).
+
+To this end we will use readX1 'read_excel' function.
+```{R merging in TF annotation data}
+# have multiple sheets in excel we only want sheet 2 and skip first line 
+#redx1::read_excel to import
+human_tfs <- readxl::read_excel("results/TF/TF_annotations.xlsx",
+                                sheet = 2, skip = 1)
+
+
+# let's rename the 4th column to indicate if it is a TF.
+names(human_tfs)[4] <- "is_tf"
+
+# now let's intersect gene names that are in our ChIP data and has TF identity, making all words lowercase so when it searches they match- mathicng the hum tf file to our gene names, askinf how many genes that are ours- are in the dta set- all of min are 5/5
+length(which(tolower(num_peaks_df$dbp) %in% tolower(human_tfs$Name)))
+```
+
+# merging annotation file to num_peaks_df
+
+```{R merging annotation file to num_peaks_df}
+
+# first let's filter and grab the first 4 columns that match DBPs in num_peaks_df, reducing column to 4  
+human_tfs <- human_tfs[tolower(human_tfs$Name) %in% tolower(num_peaks_df$dbp), 1:4]
+
+
+# adding new column names
+names(human_tfs) <- c("ensembl_id",
+                      "dbp",
+                      "dbd",
+                      "tf")
+
+# Now comes the actual merge. Let's look at it first
+# ?merge
+
+#merging the new tf tabke info with our num peaks file 
+num_peaks_df <- merge(num_peaks_df, human_tfs, all.x = T) 
+
+# Let's check how many NAs -- we should have some missing values  
+dim(num_peaks_df[is.na(num_peaks_df$tf),])
+
+# Ok looks good let's write it out:
+num_peaks_df <- num_peaks_df[,1:12]
+
+write_csv(num_peaks_df, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/06_final_going_global/analysis/01_create_consensus_peaks/results/num_peaks_df.csv")
+
+save(num_peaks_df, file = "results/num_peaks_df.RData")
+save(human_tfs, file = "results/human_tfs.RData")
+
+```
+
+# Occurence matrix of overlaps
+Now let's also use our 'count_peaks_per_feature' function to use the 'occurence' parameter
+We will make a matrix that records all the overlaps with all promoters.
+This can be used for meta plots or slecting a given gene for an overlap etc.
+
+```{r count_peaks_per_feature occurence matrix}
+
+# note similar as above but using type = occurnece
+promoter_peak_occurence <- count_peaks_per_feature(lncrna_mrna_promoters, consensus_list, 
+                                               type = "occurrence")
+
+# Let's double check that all lncrna & mrna genes are accounted for:
+stopifnot(all(colnames(promoter_peak_occurence) == lncrna_mrna_promoters$gene_id))
+
+# Great we will use this quite a bit moving forward so let's write it out! 
+write.table(promoter_peak_occurence, "/scratch/Shares/rinnclass/CLASS_2023/corrinbowman/CLASS_2023/CLASSES/06_final_going_global/analysis/01_create_consensus_peaks/results/lncrna_mrna_promoter_peak_occurence_matrix.tsv")
+
+```
+
+# Peak occurence as data.frame
+Now let's make the peak occurence matrix into a DF for easier access -- but not computation.
+```{R turnign peak_occurence matrix into data.frame}
+
+# First make sure promoter_peak_occurrence and lncrna_mrna_promoters are in the same order
+stopifnot(all(colnames(promoter_peak_occurence) == lncrna_mrna_promoters$gene_id))
+
+
+# Now let's use the 'data.frame()' fucntion. Set up a bunch of colnames and populate them.
+peak_occurence_df <- data.frame("gene_id" = colnames(promoter_peak_occurence),
+                                "gene_name" = lncrna_mrna_promoters$gene_name,
+                                "gene_type" = lncrna_mrna_promoters$gene_type,
+                                "chr" = lncrna_mrna_promoters@seqnames,   
+                                "1kb_up_tss_start" = lncrna_mrna_promoters@ranges@start,
+                                "strand" = lncrna_mrna_promoters@strand,
+                                "number_of_dbp" = colSums(promoter_peak_occurence))
+
+# let's look at what we have !
+# nice lots of info for 30K genes
+# "counts" just gave us value for the dbp of interest
+
+
+# Let's write out this data frame -- all this code & run time is now encapsulated in one .csv :)
+write_csv(peak_occurence_df, "results/peak_occurence_dataframe.csv")
+
+save(peak_occurence_df, file = "results/peak_occurence_df.RData")
+
+```
+
+Since we will use many of these files again we can save 
+the key elements as .Rdata file to loaded in next time !
+```{r saving key objects in environment to load next session}
+
+save(consensus_list, gencode_genes, lncrna_gene_ids, mrna_gene_ids, num_peaks_df, peak_occurence_df, lncrna_mrna_promoters, mrna_lncrna_genes, file = "results/peak_features.RData")
+
+load("results/peak_features.RData", verbose = T)
+
+
+```
+
+
